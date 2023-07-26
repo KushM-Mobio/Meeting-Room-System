@@ -1,0 +1,14 @@
+{
+  "name": "calendar_app",
+  "version": "1.0.0",
+  "description": "simple calendar app using frappe + react",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "cd frontend && yarn dev",
+    "build": "cd frontend && yarn build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
