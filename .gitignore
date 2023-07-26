@@ -5,3 +5,4 @@
 tags
 calendar_app/docs/current
 node_modules/
+.env

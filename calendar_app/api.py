@@ -1,10 +1,19 @@
 import frappe
 from frappe import _
-from calendar_app.constants import BASE_URL, AUTH_TOKEN, SECRET_KEY
+# from calendar_app.constants import BASE_URL, AUTH_TOKEN, SECRET_KEY
 from datetime import datetime, timedelta
 from frappe.exceptions import DoesNotExistError
 import requests
 import jwt
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+BASE_URL = os.getenv("BASE_URL")
+AUTH_TOKEN = os.getenv("AUTH_TOKEN")
+SECRET_KEY = os.getenv("SECRET_KEY")
+
 
 def convert_time_to_24h_format(time_str):
     try:
