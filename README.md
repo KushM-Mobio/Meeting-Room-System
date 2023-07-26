@@ -11,7 +11,7 @@
    `bench get-app [calendar_app](https://github.com/KushM-Mobio/Meeting-Room-System.git)
     bench new-site calendar.com
     bench --site calendar.com install-app calendar_app
-    bench use helpdesk.test
+    bench use helpdesk.test`
 
 #### License
 
