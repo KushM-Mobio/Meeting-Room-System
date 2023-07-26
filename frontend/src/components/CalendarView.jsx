@@ -2,17 +2,17 @@ import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from "@fullcalendar/interaction"
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { BASE_URL, AUTH_TOKEN } from '../constants';
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { useCalendar } from './CalendarContex';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Tooltip } from 'react-tippy';
 import 'tippy.js/dist/tippy.css';
 import { Modal, DatePicker, Input, Select, Button } from "antd";
 import moment from "moment";
-import Item from 'antd/es/list/Item';
+
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+const AUTH_TOKEN = import.meta.env.VITE_AUTH_TOKEN;
 
 let config = {
     headers: {
@@ -157,8 +157,6 @@ const CalendarView = ({ }) => {
     const handleDateClick = (arg) => {
         // Get the clicked date from the argument
         const clickedDate = arg.date;
-        console.log("cli ", clickedDate)
-
 
         // Get today's date
         const today = new Date();

@@ -1,12 +1,14 @@
-import { Button, Checkbox, Form, Input, } from 'antd';
+import { Button, Form, Input, } from 'antd';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from "react-router-dom";
 import { useLogin } from './loginContext';
 import axios from 'axios';
-import { BASE_URL, AUTH_TOKEN } from '../constants';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useState } from 'react';
+
+const BASE_URL = import.meta.env.VITE_BASE_URL;
+const AUTH_TOKEN = import.meta.env.VITE_AUTH_TOKEN;
 
 let config = {
     headers: {
