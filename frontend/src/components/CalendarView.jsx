@@ -98,7 +98,7 @@ const CalendarView = ({ }) => {
                 getEvents()
             }
         }
-    }, [events])
+    }, [])
 
     useEffect(() => {
         (async () => {

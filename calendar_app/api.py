@@ -207,6 +207,7 @@ def login():
             'usr': data["usr"],
             "pwd": data["pwd"]
         }
+        print(body)
         headers = {
             "Authorization": AUTH_TOKEN,
             "Content-Type": "application/json",
