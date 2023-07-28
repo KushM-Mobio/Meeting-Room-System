@@ -14,7 +14,6 @@ BASE_URL = os.getenv("BASE_URL")
 AUTH_TOKEN = os.getenv("AUTH_TOKEN")
 SECRET_KEY = os.getenv("SECRET_KEY")
 
-
 def convert_time_to_24h_format(time_str):
     try:
         # Convert time string to datetime object
@@ -216,7 +215,7 @@ def login():
             'usr': data["usr"],
             "pwd": data["pwd"]
         }
-        print(body)
+        print(data)
         headers = {
             "Authorization": AUTH_TOKEN,
             "Content-Type": "application/json",
