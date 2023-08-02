@@ -3,7 +3,7 @@ import { createContext, useContext, useState } from "react";
 const loginContext = createContext()
 
 const LoginProvider = ({ children }) => {
-    const [username, setUsername] = useState(null)
+    const [username, setUsername] = useState('')
     const [password, setPassword] = useState(null)
 
     return (

@@ -10,6 +10,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import 'tippy.js/dist/tippy.css';
 import { Modal, DatePicker, Input, Select, Button } from "antd";
 import moment from "moment";
+import { useLogin } from './loginContext';
+import jwt_decode from "jwt-decode";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const AUTH_TOKEN = import.meta.env.VITE_AUTH_TOKEN;
@@ -71,13 +73,14 @@ function formatTime(timeString) {
 const CalendarView = ({ }) => {
 
     const { meetingRoomType, setMeetingRoomType, meetingDetails, setMeetingDetails, events, setEvents } = useCalendar()
-    const roomElementRef = useRef(null);
     const [isModalVisible, setModalVisible] = useState(false);
     const [startTimeList, setStartTimeList] = useState(generateTimeList("12:00am", "11:45pm", 15));
     const [endTimeList, setEndTimeList] = useState([])
     const [showTimeBtn, setTimeBtn] = useState(true);
     const [postingDate, setPostingDate] = useState(null)
     const [showRoomTypeSelect, setShowRoomTypeSelect] = useState(false)
+    const [selectedEvent, setSelectedEvent] = useState(null);
+    const [evetModel, setEventModel] = useState(false)
 
     // for create new event.
     const [startTime, setStartTime] = useState(null);
@@ -87,8 +90,14 @@ const CalendarView = ({ }) => {
     const [meetingTopic, setMeetingTopic] = useState(null)
     const [access, setAccess] = useState(false)
 
+    let localStorageEmail = null;
+    if(localStorage.getItem("token")) {
+        const token = localStorage.getItem("token")
+        const decodedPayload = jwt_decode(token);
+        localStorageEmail = decodedPayload.email
+    }
+    
     useEffect(() => {
-        // console.log("use effect call", events)
         const token = localStorage.getItem("token")
         if (!token) {
             setAccess(false)
@@ -110,7 +119,6 @@ const CalendarView = ({ }) => {
                         start_time: startTime,
                         end_time: endTime
                     }, config)
-                console.log({ data })
                 if (data?.message?.status_code === 200) {
                     let room_list = data?.message?.room_type
                     let final_list = room_list.map(item => {
@@ -119,7 +127,6 @@ const CalendarView = ({ }) => {
                             "value": item
                         }
                     })
-                    console.log({ final_list })
                     setMeetingRoomType(final_list)
                     // setRoomType(data?.message?.room_type)
                 } else {
@@ -145,7 +152,7 @@ const CalendarView = ({ }) => {
         const formattedEvents = response.data.message.data.map(meeting => {
             return meeting.meeting_details.map(detail => ({
 
-                title: `${detail.meeting_topic} (${detail.meeting_room_type})`,
+                title: `${detail.meeting_topic} (${detail.meeting_room_type}) - ${detail.meeting_user}`,
                 start: `${meeting.meeting_date}T${formatTime(detail.meeting_start_time)}`,
                 end: `${meeting.meeting_date}T${formatTime(detail.meeting_end_time)}`,
                 allDay: false // Set this to false if you want time-based events
@@ -166,27 +173,22 @@ const CalendarView = ({ }) => {
         if (clickedDate < today) {
             return; // If so, do nothing
         }
-
-
+        
         // Perform the action for valid dates (after today's date)
         setModalVisible(true)
-        // setSelectedDate(arg.date)
-        // console.log("clicked....");
-        // alert("hello ");
     }
 
 
     const handleOk = async () => {
-        console.log("clicked");
 
         const { data } = await axios.post(`${BASE_URL}create_new_meet`, {
             "date": startDate,
             "topic": meetingTopic,
             "start_time": startTime,
             "end_time": endTime,
-            "room_type": roomType
+            "room_type": roomType,
+            "token": localStorage.getItem("token")
         }, config)
-        console.log({ data })
         if (data?.message?.status_code === 200) {
             getEvents()
         } else {
@@ -199,7 +201,6 @@ const CalendarView = ({ }) => {
         const formatedDate = moment(data?.$d).format(
             "YYYY-MM-DD"
         );
-        console.log(formatedDate.toString())
         setStartDate(data);
         setPostingDate(formatedDate.toString())
     }
@@ -219,6 +220,7 @@ const CalendarView = ({ }) => {
     }
 
     const handleCloseModel = () => {
+        setEventModel(false)
         setModalVisible(false);
         setTimeBtn(true);
         setStartTime(null);
@@ -233,24 +235,44 @@ const CalendarView = ({ }) => {
         return current && current < moment().startOf("day");
     };
 
+    const handleEventClick = (arg) => {
+        // Get the clicked event from the argument
+        const clickedEvent = arg.event;
+
+        // Open the modal and set the selected event
+        setEventModel(true);
+        setSelectedEvent(clickedEvent);
+    };
+
+    const handleDeleteEvent = async (removeDate, removeTopic) => {
+
+        const {data} = await axios.post(`${BASE_URL}remove_event`, 
+        {
+            "date": moment(removeDate).format("DD-MM-YYYY"),
+            "topic": removeTopic
+        }
+        ,config)
+        // After deletion, close the modal and refresh events
+        handleCloseModel();
+        getEvents();
+    };
+
     return (
         <>
             {
-                access ? <FullCalendar
-                    plugins={[dayGridPlugin, interactionPlugin, timeGridPlugin]}
-                    initialView='timeGridWeek'
-                    headerToolbar={{
-                        left: "prev,next,today",
-                        center: "title",
-                        right: "timeGridDay,timeGridWeek,dayGridMonth"
-                    }}
-                    // weekends={false}
-                    // height={"95vh"}
-                    events={events}
-                    dateClick={handleDateClick}
-                // eventContent={handleEventContent} // Use the eventContent callback
-                // eventDidMount={handleEventDidMount} // Use the eventDidMount callback
-                /> : <p>401 Unauthorize</p>
+                access ?
+                    <FullCalendar
+                        plugins={[dayGridPlugin, interactionPlugin, timeGridPlugin]}
+                        initialView='timeGridWeek'
+                        headerToolbar={{
+                            left: "prev,next,today",
+                            center: "title",
+                            right: "timeGridDay,timeGridWeek,dayGridMonth"
+                        }}
+                        events={events}
+                        dateClick={handleDateClick}
+                        eventClick={handleEventClick}
+                    /> : <p>401 Unauthorize</p>
             }
 
             <Modal
@@ -260,8 +282,6 @@ const CalendarView = ({ }) => {
                 onCancel={handleCloseModel}
                 onOk={handleOk}
             >
-                {/* Render your form here */}
-                {/* <div style={{ display: "flex", justifyContent: "space-between"}}> */}
                 <div>
                     <div>
                         <p style={{ fontWeight: 600 }}>Meeting Date & Time</p>
@@ -276,7 +296,6 @@ const CalendarView = ({ }) => {
                             <DatePicker
                                 disabledDate={disabledDate}
                                 className="date-picker custom-placement"
-                                // defaultValue={moment(selectedDate?.format("YYYY-MM-DD"))}
                                 value={startDate}
                                 onChange={(data) => { handleDate(data) }}
                             />
@@ -290,16 +309,6 @@ const CalendarView = ({ }) => {
                                         value={startTime}
                                         onChange={(value) => {
                                             handleStartTime(value)
-                                            // const formatedTime = moment(value, "h:mma").format(
-                                            //   "HH:mm:ss"
-                                            // );
-                                            // console.log("i am time ", value);
-                                            // updateEndTimeList(value);
-                                            // setStartTime(value);
-                                            // setMeetingRoom({
-                                            //   ...addMeetingRoom,
-                                            //   meetingStartTime: formatedTime,
-                                            // });
                                         }}
                                     />
                                     <Select
@@ -309,14 +318,6 @@ const CalendarView = ({ }) => {
                                         value={endTime}
                                         onChange={(value) => {
                                             handlEndTime(value)
-                                            // const formatedTime = moment(value, "h:mma").format(
-                                            //   "HH:mm:ss"
-                                            // );
-                                            // setEndTime(value);
-                                            // setMeetingRoom({
-                                            //   ...addMeetingRoom,
-                                            //   meetingEndTime: formatedTime,
-                                            // });
                                         }}
                                     />
                                 </div>
@@ -327,7 +328,6 @@ const CalendarView = ({ }) => {
                 {
                     showRoomTypeSelect && <><p style={{ fontWeight: 600 }}>Meeting Room</p>
                         <Select
-                            // defaultValue="Select Room"
                             placeholder="Select Room"
                             style={{
                                 width: "100%",
@@ -348,6 +348,31 @@ const CalendarView = ({ }) => {
                         setMeetingTopic(ev.target.value)
                     }
                 />
+            </Modal>
+
+            <Modal
+                visible={evetModel}
+                onCancel={() => {
+                    handleCloseModel();
+                    setSelectedEvent(null); // Reset selected event when closing the modal
+                }}
+                footer={[]} // Set an empty array to hide the OK and Cancel buttons
+            >
+                {selectedEvent ? (
+                    <>
+                        <h2>Event Details</h2>
+                        <p><span style={{ fontWeight: 600 }}>Title:</span> {selectedEvent.title}</p>
+                        <p><span style={{ fontWeight: 600 }}>Start Time:</span> {moment(selectedEvent.start).format("h:mm A")}</p>
+                        <p><span style={{ fontWeight: 600 }}>End Time:</span> {moment(selectedEvent.end).format("h:mm A")}</p>
+                        {
+                            selectedEvent.title.includes(localStorageEmail) ? 
+                            <Button type="primary" onClick={() => handleDeleteEvent(selectedEvent.start, selectedEvent.title)}>Delete Event</Button> : 
+                            null
+                        }
+                    </>
+                ) : (
+                    null
+                )}
             </Modal>
 
             <ToastContainer />
