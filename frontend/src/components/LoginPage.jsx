@@ -5,7 +5,7 @@ import { useLogin } from './loginContext';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const AUTH_TOKEN = import.meta.env.VITE_AUTH_TOKEN;
@@ -22,6 +22,20 @@ const LoginPage = ({ }) => {
     const navigate = useNavigate();
     const { username, setUsername, password, setPassword } = useLogin()
     const [error, setError] = useState(false)
+    const [tokenAvailable, setTokenAvailable] = useState(localStorage.getItem("token"));
+
+    useEffect(() => {
+        if(tokenAvailable) {
+            setTokenAvailable(true);
+            navigate("/frontend/calendar")
+        } else {
+            setTokenAvailable(false)
+        }
+    })
+
+    if (tokenAvailable) {
+        return null;
+    }
 
     const login = async () => {
         const { data } = await axios.post(`${BASE_URL}login`,
@@ -113,18 +127,18 @@ const LoginPage = ({ }) => {
                             }}
                         />
                     </Form.Item>
-                    <Form.Item >
+                    {/* <Form.Item >
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            {/* <Form.Item name="remember" valuePropName="checked" noStyle>
+                            <Form.Item name="remember" valuePropName="checked" noStyle>
                             <Checkbox>Remember me</Checkbox>
-                        </Form.Item> */}
+                        </Form.Item>
 
                             <a className="login-form-forgot" href="">
                                 Forgot password
                             </a>
                         </div>
 
-                    </Form.Item>
+                    </Form.Item> */}
                     {
                         error && <p style={{ textAlign: "center", color: 'red' }}>Invalid Username or Password</p>
                     }

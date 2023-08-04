@@ -1,6 +1,5 @@
 import frappe
 from frappe import _
-# from calendar_app.constants import BASE_URL, AUTH_TOKEN, SECRET_KEY
 from datetime import datetime, timedelta
 from frappe.exceptions import DoesNotExistError
 import requests
@@ -17,9 +16,6 @@ ROLE = os.getenv('ROLE')
 CLICKUP_AUTH_TOKEN = os.getenv("CLICKUP_AUTH_TOKEN")
 CLICKUP_BASE_URL = os.getenv("CLICKUP_BASE_URL")
 PASSWORD = os.getenv("PASSWORD")
-print("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
-print(PASSWORD)
-print(ROLE)
 
 #To check if document exists    
 def is_exists(doctype, filters=None):
@@ -106,16 +102,11 @@ def get_meeting_room():
 def filtered_room():
     try:
         data = frappe.request.get_json()
-        print(data)
         date = data["date"]
-        print((data["start_time"]))
-        print((data["end_time"]))
         start_time = convert_time_to_24h_format(data["start_time"])
         end_time = convert_time_to_24h_format(data["end_time"])
         all_meeting_room_type = get_meeting_room_type()["data"]
         booked_room_type = []
-
-        print(f"{start_time} - {end_time}")
 
         # Get all meeting rooms along with their meeting_date
         filters= {"meeting_date": date}
@@ -157,7 +148,6 @@ def filtered_room():
     
 @frappe.whitelist()
 def create_new_meet():
-    print("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSs")
     try:
         data = frappe.request.get_json()
         date = data["date"]
@@ -168,12 +158,9 @@ def create_new_meet():
         jwt_token = data["token"]
         decoded_token = jwt.decode(jwt_token, SECRET_KEY, algorithms=["HS256"])
         email = decoded_token["email"]
-        print(data)
         filters= {"meeting_date": date}
         meeting = frappe.get_all("meeting room", filters)
         if len(meeting) > 0:
-            # print(meeting[0]["name"])
-
             # Get the Meeting Room document by its name
             meeting_doc = frappe.get_doc("meeting room", meeting[0]["name"])
             # return meeting_doc
@@ -189,11 +176,9 @@ def create_new_meet():
             meeting_doc.save()
         else:
             doc = frappe.new_doc("meeting room")
-            # print(f"date = {date}")
             meeting_date_obj = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.%fZ')
             meeting_date_formatted = meeting_date_obj.strftime('%Y-%m-%d')
             doc.meeting_date = meeting_date_formatted
-            # print(f"new date = {meeting_date_formatted}")
             doc.append("meeting_details", {
                 "meeting_topic": meeting_topic,
                 "meeting_start_time": meeting_start_time,
@@ -224,7 +209,6 @@ def create_new_meet():
 
 @frappe.whitelist()
 def login():
-    print("login hit")
     try:
         url = f'{BASE_URL}/login'
         data = frappe.request.get_json()
@@ -232,7 +216,6 @@ def login():
             'usr': data["usr"],
             "pwd": data["pwd"]
         }
-        print(data)
         headers = {
             "Authorization": AUTH_TOKEN,
             "Content-Type": "application/json",
@@ -331,28 +314,30 @@ def remove_event():
     try:
         data = frappe.request.get_json()
         date = data["date"]
+        date_format = "%d-%m-%Y"
+        date_obj = datetime.strptime(date, date_format).date()
         meeting_topic = data["topic"].split(" (")[0]
-        print(meeting_topic)
-
-        # Load the parent document
-        filters= {"meeting_date": datetime.strptime(date, "%d-%m-%Y")}
+        filters= {"meeting_date": date_obj}
         meeting = frappe.get_all("meeting room", filters)
-
         if len(meeting) > 0:
             # Get the Meeting Room document by its name
             meeting_doc = frappe.get_doc("meeting room", meeting[0]["name"])
-
+            print(meeting_doc)
             # Find the child table
             child_table = meeting_doc.get("meeting_details")
+            print(child_table)
+
+            rows_to_remove = []
+
             for row in child_table:
                 if row.meeting_topic == meeting_topic:
-                    print(row.meeting_topic == meeting_topic)
-                    child_table.remove(row)
-                    break
+                    rows_to_remove.append(row)
 
-            # Save the parent document to apply the changes
+            for row in rows_to_remove:
+                child_table.remove(row)
+
             meeting_doc.save()
-
+            
             return {
                 "status_code": 200,
                 "data": "Meeting Deleted Successfully"
